@@ -1,4 +1,5 @@
 package simpleipc
+
 /*
 	// https://github.com/golang/gofrontend/blob/master/libgo/go/syscall/syscall_unix_test.go
 	fd = syscall.Socketpair()
@@ -85,8 +86,8 @@ func NewChannel(cnx *net.UnixConn, recvBuffer, sendBuffer int) Channel {
 func (c *channel) receive(cnx *net.UnixConn) {
 	quitSignal := make(chan error)
 	go func() {
-		ch := <-c.quit:
-		err := <-cnx.SetDeadline(time.Clock())
+		ch := <-c.quit
+		err := cnx.SetDeadline(time.Now())
 		if err != nil {
 			ch <- err
 		} else {
@@ -160,6 +161,7 @@ loop:
 	for {
 		select {
 		case ch := <-c.quit:
+			_ = ch
 			break loop
 		case msg := <-c.outgoing:
 			if broken {
@@ -222,10 +224,11 @@ loop:
 }
 
 func (c *channel) run() {
-loop:
 	closed := false
+loop:
 	for {
 		inChan := c.chanMsg
+		_ = inChan
 		if closed {
 			inChan = nil
 		}
@@ -265,7 +268,7 @@ loop:
 }
 
 func (c *channel) Close() error {
-	res := make(chan bool)
+	res := make(chan error)
 	c.quit <- res
 	c.quit <- res
 	c.quit <- res
