@@ -61,3 +61,10 @@ that ancillary data attached with it are found correctly. See discussion about
 what happens when messages with ancillary data are read partially:
 
 https://unix.stackexchange.com/questions/185011/what-happens-with-unix-stream-ancillary-data-on-partial-reads
+
+Contributions
+-------------
+
+The goal of this protocol is to stay simple, I don't plan to add features to it.
+However if you want to contribute, you can contribute to tests and implementation
+on other languages.
