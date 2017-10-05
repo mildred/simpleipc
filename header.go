@@ -3,6 +3,8 @@ package simpleipc
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
+	"io"
 	"net"
 	"os"
 )
@@ -55,16 +57,45 @@ func (h *Header) Write(cnx *net.UnixConn) error {
 	return Send(cnx, data, fds)
 }
 
-func (h *Header) Read(cnx *net.UnixConn, filenames []string) error {
+func (h *Header) WriteWithPayload(cnx *net.UnixConn, payload []byte) error {
+	if uint32(len(payload)) != h.Size {
+		return fmt.Errorf("Payload size (%d) in header different than actual payload (%d)", h.Size, len(payload))
+	}
+	err := h.Write(cnx)
+	if err != nil {
+		return err
+	}
+	_, err = cnx.Write(payload)
+	return err
+}
+
+func (h *Header) read(cnx *net.UnixConn, filenames []string, inclPayload bool) ([]byte, error) {
+	var payload []byte
 	res, err := Receive(cnx, HeaderLength, HeaderMaxFiles)
 	if err != nil {
-		return err
+		return payload, err
 	}
 	h.Decode(res.Data)
+	if inclPayload && h.Size > 0 {
+		payload = make([]byte, h.Size)
+		_, err = io.ReadFull(cnx, payload)
+		if err != nil {
+			return payload, err
+		}
+	}
 	err = res.ParseFiles(int(h.NumFiles))
 	if err != nil {
-		return err
+		return payload, err
 	}
 	h.Files = ToFiles(res.Fds, filenames)
-	return nil
+	return payload, nil
+}
+
+func (h *Header) Read(cnx *net.UnixConn, filenames []string) error {
+	_, err := h.read(cnx, filenames, false)
+	return err
+}
+
+func (h *Header) ReadWithPayload(cnx *net.UnixConn, filenames []string) ([]byte, error) {
+	return h.read(cnx, filenames, true)
 }
