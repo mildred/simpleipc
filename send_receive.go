@@ -2,6 +2,7 @@ package simpleipc
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"syscall"
@@ -46,9 +47,12 @@ func Receive(cnx *net.UnixConn, length int, maxfiles int) (res Response, err err
 	// recvmsg
 	res.Data = make([]byte, length)
 	res.cmsg = make([]byte, syscall.CmsgSpace(maxfiles*4))
-	_, _, _, _, err = syscall.Recvmsg(socket, res.Data, res.cmsg, 0)
+	var nres int
+	nres, _, _, _, err = syscall.Recvmsg(socket, res.Data, res.cmsg, 0)
 	if err != nil {
 		return res, err
+	} else if nres == 0 {
+		return res, io.EOF
 	}
 	return res, nil
 }
